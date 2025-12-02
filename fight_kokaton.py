@@ -110,6 +110,35 @@ class Beam:
             screen.blit(self.img, self.rct)    
 
 
+class Score:
+    """
+    スコア表示に関するクラス
+    """
+    def __init__(self):
+        """
+        スコアの初期化
+        """
+        self.fonto = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体", 30)
+        self.value = 0  # スコアの初期値
+
+    def add_score(self, n: int):
+        """
+        スコアを増加させる
+        引数 n：加える点数
+        """
+        self.value += n
+
+    def update(self, screen: pg.Surface):
+        """
+        現在のスコアを画面に表示する
+        引数 screen：画面Surface
+        """
+        txt = self.fonto.render(f"Score: {self.value}", True, (0, 0, 255))
+        txt_rct = txt.get_rect()
+        txt_rct.center = (100, HEIGHT - 50)  # 画面左下（横：100、縦：画面下部から50）
+        screen.blit(txt, txt_rct) 
+
+
 class Bomb:
     """
     爆弾に関するクラス
@@ -149,6 +178,7 @@ def main():
     #bomb = Bomb((255, 0, 0), 10)
     bombs = [Bomb((255, 0, 0), 10) for _ in range(num_of_bombs)]
     beam = None  # ゲーム初期化時にはビームは存在しない
+    score = Score()  # Scoreインスタンスの生成
     clock = pg.time.Clock()
     tmr = 0
     while True:
@@ -176,6 +206,7 @@ def main():
                     beam = None  # ビームと爆弾が衝突したらビームを消す
                     bombs[b] = None  # ビームと爆弾が衝突したら爆弾を消す
                     bird.change_img(6, screen)
+                    score.add_score(1)  # スコアを1点加算
                     pg.display.update()
         bombs = [bomb for bomb in bombs if bomb is not None]
 
@@ -185,6 +216,8 @@ def main():
             beam.update(screen) 
         for bomb in bombs:
             bomb.update(screen)
+        score.update(screen)  # スコア表示を更新
+       
         pg.display.update()
         tmr += 1
         clock.tick(50)
