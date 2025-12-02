@@ -2,6 +2,7 @@ import os
 import random
 import sys
 import time
+import math
 import pygame as pg
 
 
@@ -56,6 +57,8 @@ class Bird:
         self.img = __class__.imgs[(+5, 0)]
         self.rct: pg.Rect = self.img.get_rect()
         self.rct.center = xy
+        # 向き（デフォルトは右向き）
+        self.dire = (+5, 0)
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -81,6 +84,8 @@ class Bird:
         if check_bound(self.rct) != (True, True):
             self.rct.move_ip(-sum_mv[0], -sum_mv[1])
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
+            # 向きを更新して画像を切り替える
+            self.dire = (sum_mv[0], sum_mv[1])
             self.img = __class__.imgs[tuple(sum_mv)]
         screen.blit(self.img, self.rct)
 
@@ -94,11 +99,20 @@ class Beam:
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん（Birdインスタンス）
         """
-        self.img = pg.image.load(f"fig/beam.png")
+        # ビーム画像を向きに合わせて回転させる
+        vx_dir, vy_dir = bird.dire  # こうかとんの向き
+        # 直交座標 (x, -y) から角度を取得して度に変換
+        theta = math.degrees(math.atan2(-vy_dir, vx_dir))
+        base_img = pg.image.load(f"fig/beam.png").convert_alpha()
+        self.img = pg.transform.rotozoom(base_img, theta, 1.0)
         self.rct = self.img.get_rect()
-        self.rct.centery = bird.rct.centery
-        self.rct.left = bird.rct.right
-        self.vx, self.vy = +5, 0
+        # ビームの速度は向きベクトルに基づく（単位は従来どおり5ベース）
+        self.vx, self.vy = float(vx_dir), float(vy_dir)
+        # 初期位置をこうかとんの中心と向きで補正して設定
+        bw, bh = bird.rct.width, bird.rct.height
+        centerx = bird.rct.centerx + int(bw * (self.vx / 5.0))
+        centery = bird.rct.centery + int(bh * (self.vy / 5.0))
+        self.rct.center = (centerx, centery)
 
     def update(self, screen: pg.Surface):
         """
