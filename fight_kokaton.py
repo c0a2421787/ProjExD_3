@@ -110,6 +110,30 @@ class Beam:
             screen.blit(self.img, self.rct)    
 
 
+class Exploision:
+    """
+    爆発エフェクトに関するクラス
+    """
+    def __init__(self, center: tuple[int, int]):
+        """
+        爆発エフェクト画像Surfaceを生成する
+        引数 center：爆発エフェクトの中心座標タプル
+        """
+        self.img = pg.image.load("fig/explosion.png")
+        self.rct = self.img.get_rect()
+        self.rct.center = center
+        self.timer = 30  # 爆発エフェクトの表示時間（フレーム数）
+
+    def update(self, screen: pg.Surface):
+        """
+        爆発エフェクトを画面に表示し，タイマーを減少させる
+        引数 screen：画面Surface
+        """
+        if self.timer > 0:
+            screen.blit(self.img, self.rct)
+            self.timer -= 1
+
+
 class Score:
     """
     スコア表示に関するクラス
@@ -170,6 +194,37 @@ class Bomb:
         screen.blit(self.img, self.rct)
 
 
+class Explosion:
+    """
+    爆発エフェクトを扱うクラス
+    - surfaces: 元画像と反転画像を持つリスト（交互に表示してチカチカさせる）
+    - center: 爆発の中心座標
+    - life: 表示時間（フレーム数）
+    """
+    def __init__(self, center: tuple[int, int], life: int = 20):
+        # 元の爆発画像を読み込み、反転画像も用意する
+        img = pg.image.load("fig/explosion.gif")
+        img = img.convert_alpha()
+        img_flipped = pg.transform.flip(img, True, False)
+        self.surfaces = [img, img_flipped]
+        self.center = center
+        self.life = life
+
+    def update(self, screen: pg.Surface):
+        """
+        life を1減算し、life>0なら交互のSurfaceをblitする
+        """
+        if self.life <= 0:
+            return
+        # 表示（2フレームごとに切り替える）
+        idx = (self.life // 2) % 2
+        surf = self.surfaces[idx]
+        rct = surf.get_rect()
+        rct.center = self.center
+        screen.blit(surf, rct)
+        self.life -= 1
+
+
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
@@ -178,6 +233,7 @@ def main():
     #bomb = Bomb((255, 0, 0), 10)
     bombs = [Bomb((255, 0, 0), 10) for _ in range(num_of_bombs)]
     beams = []  # 複数のビームを管理するための空のリスト
+    explosions = []  # 複数の爆発エフェクトを管理するための空のリスト
     score = Score()  # Scoreインスタンスの生成
     clock = pg.time.Clock()
     tmr = 0
@@ -207,8 +263,11 @@ def main():
                 if beam is None:
                     continue
                 if beam.rct.colliderect(bomb.rct):
+                    # 衝突位置を保持してからオブジェクト配列を更新
+                    center = bomb.rct.center
                     beams[i] = None  # 衝突したビームをNoneとする
                     bombs[b] = None  # 衝突した爆弾をNoneとする
+                    explosions.append(Explosion(center, life=20))  # 爆発エフェクトを追加
                     bird.change_img(6, screen)
                     score.add_score(1)  # スコアを1点加算
                     pg.display.update()
@@ -221,6 +280,10 @@ def main():
             beam.update(screen) 
         for bomb in bombs:
             bomb.update(screen)
+        for explosion in explosions:
+            explosion.update(screen)
+        # life が残っている爆発のみ残す
+        explosions = [e for e in explosions if e.life > 0]
         score.update(screen)  # スコア表示を更新
        
         pg.display.update()
