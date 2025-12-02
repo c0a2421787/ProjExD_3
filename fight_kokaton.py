@@ -170,6 +170,8 @@ def main():
                 if beam.rct.colliderect(bomb.rct):
                     beam = None  # ビームと爆弾が衝突したらビームを消す
                     bomb = None  # ビームと爆弾が衝突したら爆弾を消す
+                    bird.change_img(6, screen)
+                    pg.display.update()
 
 
         key_lst = pg.key.get_pressed()
